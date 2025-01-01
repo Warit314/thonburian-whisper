@@ -200,7 +200,10 @@ poetry.toml
 # ruff
 .ruff_cache/
 
-# End of https://www.toptal.com/developers/gitignore/api/python,osx
+# Project specific
+longform_transcription/temp_directory_for_chunks/
+longform_transcription/uploads/
+longform_transcription/processed/
 
 # Thonburian Whisper virtual environment
 longform_transcription/Thonburian_venv

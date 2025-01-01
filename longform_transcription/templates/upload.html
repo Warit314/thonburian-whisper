@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Upload File</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+      .hidden {
+        display: none;
+      }
+      .progress {
+        height: 25px;
+      }
+    </style>
+  </head>
+  <body class="bg-light">
+    <div class="container py-5">
+      <div class="row justify-content-center">
+        <div class="col-md-8">
+          <div class="card shadow">
+            <div class="card-body">
+              <h1 class="card-title text-center mb-4">Upload Audio File</h1>
+              
+              <form id="uploadForm" class="needs-validation" novalidate>
+                <div class="mb-3">
+                  <label for="file" class="form-label">Choose audio file</label>
+                  <input type="file" class="form-control" id="file" name="file" accept=".mp3,.wav,.mp4" required>
+                  <div class="invalid-feedback">Please select a file.</div>
+                </div>
+                
+                <div class="mb-3">
+                  <label for="output_format" class="form-label">Output Format</label>
+                  <select class="form-control" id="output_format" name="output_format">
+                    <option value="csv">CSV</option>
+                    <option value="srt">SRT</option>
+                  </select>
+                </div>
+
+                <div class="progress mb-3 hidden" id="progressBar">
+                  <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                       role="progressbar" style="width: 0%">Processing...</div>
+                </div>
+
+                <div class="alert alert-success hidden" id="successAlert" role="alert">
+                  File processed successfully! 
+                  <a href="#" id="downloadLink" class="alert-link">Download here</a>
+                </div>
+
+                <div class="alert alert-danger hidden" id="errorAlert" role="alert"></div>
+
+                <button type="submit" class="btn btn-primary w-100" id="submitBtn">Upload and Process</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+      document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const form = this;
+        const submitBtn = document.getElementById('submitBtn');
+        const progressBar = document.getElementById('progressBar');
+        const progressBarInner = progressBar.querySelector('.progress-bar');
+        const successAlert = document.getElementById('successAlert');
+        const errorAlert = document.getElementById('errorAlert');
+        const downloadLink = document.getElementById('downloadLink');
+        
+        // Reset UI
+        successAlert.classList.add('hidden');
+        errorAlert.classList.add('hidden');
+        
+        // Validate form
+        if (!form.checkValidity()) {
+          form.classList.add('was-validated');
+          return;
+        }
+        
+        // Prepare form data
+        const formData = new FormData();
+        formData.append('file', document.getElementById('file').files[0]);
+        formData.append('output_format', document.getElementById('output_format').value);
+        
+        try {
+          // Show progress and disable submit
+          progressBar.classList.remove('hidden');
+          submitBtn.disabled = true;
+          progressBarInner.style.width = '50%';
+          
+          // Make API call
+          const response = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData
+          });
+          
+          const data = await response.json();
+          
+          if (response.ok && data.success) {
+            // Show success
+            progressBarInner.style.width = '100%';
+            successAlert.classList.remove('hidden');
+            downloadLink.href = data.download_url;
+            // Reset the form
+            form.reset();
+            form.classList.remove('was-validated');
+          } else {
+            // Show error
+            throw new Error(data.error || data.details || 'Failed to process file');
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          errorAlert.textContent = error.message;
+          errorAlert.classList.remove('hidden');
+          progressBarInner.style.width = '0%';
+        } finally {
+          submitBtn.disabled = false;
+          setTimeout(() => {
+            if (!errorAlert.classList.contains('hidden')) {
+              progressBar.classList.add('hidden');
+              progressBarInner.style.width = '0%';
+            }
+          }, 1000);
+        }
+      });
+    </script>
+  </body>
+</html>
